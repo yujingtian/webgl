@@ -3,7 +3,7 @@
     <head>
     <meta charset="utf-8" />
     <title>Page Title</title>
-        <script type="text/javascript" src="../glMatrix-0.9.5.min.js"></script>
+        <script type="text/javascript" src="./glMatrix-0.9.5.min.js"></script>
         <script type="x-shader/x-fragment" id="shader-fs">
             precision mediump float;
             varying vec4 vColor;
@@ -178,17 +178,17 @@
                 gl.drawArrays(gl.TRIANGLES,0,triangleVertexPositionBuffer.numItems)
                 mvPopMatrix();
 
-                mat4.identity(mvMatrix); //初始化矩阵
-                mat4.translate(mvMatrix,[1.5, 0.0, -10.0]);
-                mvPushMatrix();
-                mat4.rotate(mvMatrix, degToRad(rSquare), [0, 2, 1]);
-                gl.bindBuffer(gl.ARRAY_BUFFER,squareVertexPositionBuffer)
-                gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute,squareVertexPositionBuffer.itemSize,gl.FLOAT,false,0,0);
-                gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexColorBuffer);
-                gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, squareVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0)
-                setMatrixUniforms();
-                gl.drawArrays(gl.TRIANGLE_STRIP,0,squareVertexPositionBuffer.numItems)
-                mvPopMatrix();
+                // mat4.identity(mvMatrix); //初始化矩阵
+                // mat4.translate(mvMatrix,[1.5, 0.0, -10.0]);
+                // mvPushMatrix();
+                // mat4.rotate(mvMatrix, degToRad(rSquare), [0, 2, 1]);
+                // gl.bindBuffer(gl.ARRAY_BUFFER,squareVertexPositionBuffer)
+                // gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute,squareVertexPositionBuffer.itemSize,gl.FLOAT,false,0,0);
+                // gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexColorBuffer);
+                // gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, squareVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0)
+                // setMatrixUniforms();
+                // gl.drawArrays(gl.TRIANGLE_STRIP,0,squareVertexPositionBuffer.numItems)
+                // mvPopMatrix();
             }
             var lastTime = 0;
             function animate(){

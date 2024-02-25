@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>webgl-transform</title>
+</head>
+<body>
+  <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+<script src="../utils/glMatrix-0.9.5.min.js"></script>
+<script>
+  var gl, canvas, pMatrix = mat4.create(), mvMatrix = mat4.create(), angle = 0, mvMatrix2 = mat4.create()
+  function init() {
+    initWebgl()
+    initShader()
+    setInterval(() => {
+      angle++
+      initBuffer()
+      draw()
+    }, 1)
+  }
+  function initWebgl() {
+    canvas = document.getElementById('canvas')
+    gl = canvas.getContext('webgl')
+    gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight)
+    mat4.ortho(0, canvas.clientWidth, canvas.clientHeight, 0, -1, 1, pMatrix)
+    // mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+  }
+  function initShader() {
+      let vertexShaderStr = `
+        attribute vec4 point;
+        uniform mat4 mvMatrix;
+        uniform mat4 pMatrix;
+        void main () {
+          gl_Position = pMatrix * mvMatrix * point;
+        }
+      `
+      let fragmentShaderStr = `void main () {
+          gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+      }`
+      let vertexShader = gl.createShader(gl.VERTEX_SHADER)
+      let fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
+
+      gl.shaderSource(vertexShader, vertexShaderStr)
+      gl.shaderSource(fragmentShader, fragmentShaderStr)
+
+      gl.compileShader(vertexShader)
+      gl.compileShader(fragmentShader)
+
+      let program = gl.createProgram()
+      gl.attachShader(program, vertexShader)
+      gl.attachShader(program, fragmentShader)
+
+      gl.linkProgram(program)
+      if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+        console.log('定点着色器创建失败:', gl.getShaderInfoLog(vertexShader))
+      }
+      if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+        console.log('像素着色器创建失败:', gl.getShaderInfoLog(fragmentShader))
+      }
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.log('链接失败:', gl.getProgramInfoLog(program))
+        return
+      }
+      gl.useProgram(program)
+      gl.program = program
+  }
+  function initBuffer() {
+    let pointLocation = gl.getAttribLocation(gl.program, 'point')
+    let float = new Float32Array([
+      -50.0, 100.0, 0, 1.0,
+      50.0, 0.0, 0, 1.0,
+      -50.0, -100.0, 0, 1.0,
+    ])
+    let vertexBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, float, gl.STATIC_DRAW)
+    gl.vertexAttribPointer(pointLocation, 4, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(pointLocation)
+
+    let pLocation = gl.getUniformLocation(gl.program, 'pMatrix')
+    gl.uniformMatrix4fv(pLocation, false, pMatrix)
+
+    let mvLocation = gl.getUniformLocation(gl.program, 'mvMatrix')
+    mat4.identity(mvMatrix)
+    mat4.translate(mvMatrix, [200, 200, 0]);
+    mat4.rotate(mvMatrix, angle * Math.PI / 180, [0, 0, 1]);
+    gl.uniformMatrix4fv(mvLocation, false, mvMatrix)
+    console.log(mvMatrix)
+  }
+  function draw(len = 0) {
+    gl.clearColor(0.0, 1.0, 0.0, 1.0)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+    gl.drawArrays(gl.TRIANGLES, 0, 12)
+  }
+  init()
+</script>
+</html>
