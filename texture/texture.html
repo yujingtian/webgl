@@ -31,7 +31,7 @@
         varying vec2 v_textureCoord;
         void main () {
           v_textureCoord = a_textureCoord;
-          gl_Position = point;
+          gl_Position = pMatrix * point;
         }
       `
       let fragmentShaderStr = `
@@ -39,11 +39,9 @@
         varying vec2 v_textureCoord;
         uniform sampler2D uSampler;
         void main () {
-            gl_FragColor = vec4(1.0, 0, 0, 1.0);
+            gl_FragColor = texture2D(uSampler, gl_PointCoord);
         }
       `
-      // texture2D(uSampler, v_textureCoord);
-      // vec4(1.0, 0, 0, 1.0);
       let vertexShader = gl.createShader(gl.VERTEX_SHADER)
       let fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
 
@@ -74,23 +72,23 @@
   function initBuffer() {
     let pointLocation = gl.getAttribLocation(gl.program, 'point')
     let float = new Float32Array([
-      -0.5, 0.5,
-      -0.5,-0.5,
-      0.5,  0.5, 
-      0.5, -0.5,
+      100.0, 100.0, 0, 1.0,
+      200.0, 100.0, 0, 1.0,
+      100.0, 200.0, 0, 1.0,
+      200.0, 200.0, 0, 1.0,
     ])
     let vertexBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, float, gl.STATIC_DRAW)
-    gl.vertexAttribPointer(pointLocation, 2, gl.FLOAT, false, 0, 0)
+    gl.vertexAttribPointer(pointLocation, 4, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(pointLocation)
 
     let textureCoordsBuffer = gl.createBuffer()
     let textureCoords = new Float32Array([
-      0,1,
-      0,0,
       1,1,
-      1,0
+      0,1,
+      1,0,
+      0,0
     ])
     gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordsBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, textureCoords, gl.STATIC_DRAW)
@@ -118,6 +116,8 @@
 
   function handleTexture(texture) {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, texture.image)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     let textureLocation = gl.getUniformLocation(gl.program, 'uSampler')
     gl.uniform1i(textureLocation, 0)
 
