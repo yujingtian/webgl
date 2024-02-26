@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>webgl-texture</title>
+</head>
+<body>
+  <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+<script src="../utils/glMatrix-0.9.5.min.js"></script>
+<script>
+  var gl, canvas, pMatrix = mat4.create(), mvMatrix = mat4.create()
+  function init() {
+    initWebgl()
+    initShader()
+    initBuffer()
+    initTexture()
+  }
+  function initWebgl() {
+    canvas = document.getElementById('canvas')
+    gl = canvas.getContext('webgl')
+    gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight)
+    mat4.ortho(0, canvas.clientWidth, canvas.clientHeight, 0, -1, 1, pMatrix)
+  }
+  function initShader() {
+      let vertexShaderStr = `
+        attribute vec4 point;
+        attribute vec2 a_textureCoord;
+        uniform mat4 pMatrix;
+        varying vec2 v_textureCoord;
+        void main () {
+          v_textureCoord = a_textureCoord;
+          gl_Position = point;
+        }
+      `
+      let fragmentShaderStr = `
+        precision highp float;
+        varying vec2 v_textureCoord;
+        uniform sampler2D uSampler;
+        void main () {
+            gl_FragColor = vec4(1.0, 0, 0, 1.0);
+        }
+      `
+      // texture2D(uSampler, v_textureCoord);
+      // vec4(1.0, 0, 0, 1.0);
+      let vertexShader = gl.createShader(gl.VERTEX_SHADER)
+      let fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
+
+      gl.shaderSource(vertexShader, vertexShaderStr)
+      gl.shaderSource(fragmentShader, fragmentShaderStr)
+
+      gl.compileShader(vertexShader)
+      gl.compileShader(fragmentShader)
+
+      let program = gl.createProgram()
+      gl.attachShader(program, vertexShader)
+      gl.attachShader(program, fragmentShader)
+
+      gl.linkProgram(program)
+      if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+        console.log('定点着色器创建失败:', gl.getShaderInfoLog(vertexShader))
+      }
+      if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+        console.log('像素着色器创建失败:', gl.getShaderInfoLog(fragmentShader))
+      }
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.log('链接失败:', gl.getProgramInfoLog(program))
+        return
+      }
+      gl.useProgram(program)
+      gl.program = program
+  }
+  function initBuffer() {
+    let pointLocation = gl.getAttribLocation(gl.program, 'point')
+    let float = new Float32Array([
+      -0.5, 0.5,
+      -0.5,-0.5,
+      0.5,  0.5, 
+      0.5, -0.5,
+    ])
+    let vertexBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, float, gl.STATIC_DRAW)
+    gl.vertexAttribPointer(pointLocation, 2, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(pointLocation)
+
+    let textureCoordsBuffer = gl.createBuffer()
+    let textureCoords = new Float32Array([
+      0,1,
+      0,0,
+      1,1,
+      1,0
+    ])
+    gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordsBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, textureCoords, gl.STATIC_DRAW)
+    let textureCoordLocation = gl.getAttribLocation(gl.program, 'a_textureCoord')
+    gl.vertexAttribPointer(textureCoordLocation, 2, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(textureCoordLocation)
+
+
+    let pLocation = gl.getUniformLocation(gl.program, 'pMatrix')
+    gl.uniformMatrix4fv(pLocation, false, pMatrix)
+  }
+
+  function initTexture() {
+    let texture = gl.createTexture()
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+    gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    texture.image = new Image()
+    texture.image.onload = function () {
+      handleTexture(texture)
+    }
+    texture.image.crossOrigin = 'anonymous'
+    texture.image.src = '../assets/timg.jpg'
+  }
+
+  function handleTexture(texture) {
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, texture.image)
+    let textureLocation = gl.getUniformLocation(gl.program, 'uSampler')
+    gl.uniform1i(textureLocation, 0)
+
+    draw()
+  }
+
+  function draw(len = 0) {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+  }
+  init()
+</script>
+</html>
