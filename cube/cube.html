@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>webgl-cube</title>
+</head>
+<body>
+  <canvas id="canvas" width="500" height="500"></canvas>
+</body>
+<script src="../utils/gl-matrix.js"></script>
+<script>
+  var gl, canvas, pMatrix = glMatrix.mat4.create(), mvMatrix = glMatrix.mat4.create(), angle = 0, mvMatrix2 = glMatrix.mat4.create(),
+  lookMatrix = glMatrix.mat4.create()
+  function init() {
+    initWebgl()
+    initShader()
+    initBuffer()
+    draw()
+  }
+  function initWebgl() {
+    canvas = document.getElementById('canvas')
+    gl = canvas.getContext('webgl')
+    gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight)
+    glMatrix.mat4.perspective(pMatrix, Math.PI / 3, canvas.clientWidth / canvas.clientHeight, 0.001, 100.0);
+  }
+  function initShader() {
+      let vertexShaderStr = `
+        attribute vec4 point;
+        uniform mat4 mvMatrix;
+        uniform mat4 pMatrix;
+        void main () {
+          gl_Position = pMatrix * mvMatrix * point;
+        }
+      `
+      let fragmentShaderStr = `void main () {
+          gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+      }`
+      let vertexShader = gl.createShader(gl.VERTEX_SHADER)
+      let fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
+
+      gl.shaderSource(vertexShader, vertexShaderStr)
+      gl.shaderSource(fragmentShader, fragmentShaderStr)
+
+      gl.compileShader(vertexShader)
+      gl.compileShader(fragmentShader)
+
+      let program = gl.createProgram()
+      gl.attachShader(program, vertexShader)
+      gl.attachShader(program, fragmentShader)
+
+      gl.linkProgram(program)
+      if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+        console.log('定点着色器创建失败:', gl.getShaderInfoLog(vertexShader))
+      }
+      if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+        console.log('像素着色器创建失败:', gl.getShaderInfoLog(fragmentShader))
+      }
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.log('链接失败:', gl.getProgramInfoLog(program))
+        return
+      }
+      gl.useProgram(program)
+      gl.program = program
+  }
+  function initBuffer() {
+    let pointLocation = gl.getAttribLocation(gl.program, 'point')
+    let float = new Float32Array([
+      // Front face
+      1.0, 1.0, 1.0, 1.0,
+      -1.0, 1.0, 1.0, 1.0,
+      1.0, -1.0, 1.0, 1.0,
+      -1.0, -1.0, 1.0, 1.0,
+
+      // Back face
+      -1.0, -1.0, -1.0, 1.0,
+      -1.0, 1.0, -1.0, 1.0,
+      1.0, -1.0, -1.0, 1.0,
+      1.0, 1.0, -1.0, 1.0,
+
+      // Top face
+      -1.0, 1.0, -1.0, 1.0,
+      -1.0, 1.0, 1.0, 1.0,
+      1.0, 1.0, 1.0, 1.0,
+      1.0, 1.0, -1.0, 1.0,
+
+      // Bottom face
+      -1.0, -1.0, -1.0, 1.0,
+      1.0, -1.0, -1.0, 1.0,
+      1.0, -1.0, 1.0, 1.0,
+      -1.0, -1.0, 1.0, 1.0,
+
+      // Right face
+      1.0, -1.0, -1.0, 1.0,
+      1.0, 1.0, -1.0, 1.0,
+      1.0, 1.0, 1.0, 1.0,
+      1.0, -1.0, 1.0, 1.0,
+
+      // Left face
+      -1.0, -1.0, -1.0, 1.0,
+      -1.0, -1.0, 1.0, 1.0,
+      -1.0, 1.0, 1.0, 1.0,
+      -1.0, 1.0, -1.0, 1.0,
+    ])
+    let vertexBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, float, gl.STATIC_DRAW)
+    gl.vertexAttribPointer(pointLocation, 4, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(pointLocation)
+
+    let elementIndex = [
+        0, 1, 2, 1, 2, 3,    // Front face
+        4, 5, 6, 5, 6, 7,    // Back face
+        8, 9, 10, 8, 10, 11,  // Top face
+        12, 13, 14, 12, 14, 15, // Bottom face
+        16, 17, 18, 16, 18, 19, // Right face
+        20, 21, 22, 20, 22, 23  // Left face
+    ]
+    const elementBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer)
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(elementIndex), gl.STATIC_DRAW)
+
+    let pLocation = gl.getUniformLocation(gl.program, 'pMatrix')
+    glMatrix.mat4.lookAt(lookMatrix, [0, 0, 4], [0, 1, 0], [0, 1, 0])
+    console.log(lookMatrix)
+    glMatrix.mat4.multiply(pMatrix, pMatrix, lookMatrix);
+    gl.uniformMatrix4fv(pLocation, false, pMatrix)
+
+    let mvLocation = gl.getUniformLocation(gl.program, 'mvMatrix')
+    glMatrix.mat4.identity(mvMatrix)
+    glMatrix.mat4.rotate(mvMatrix, mvMatrix, 30 * Math.PI / 180, [0, 1, 0]);
+    gl.uniformMatrix4fv(mvLocation, false, mvMatrix)
+  }
+  function draw(len = 0) {
+    gl.clearColor(.1, .1, .1, 1.0)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+    gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0)
+  }
+  init()
+</script>
+</html>
